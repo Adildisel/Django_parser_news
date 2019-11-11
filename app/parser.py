@@ -48,20 +48,21 @@ class Helper:
                 art_id = art.get('id')
                 print(art_id)
                 # art_id = 'Data'
-                title = art.find('a', class_='entry-title').text.strip()
+                # title = art.find('a', class_='entry-title').text.strip()
                 href = art.find('a', class_='entry-title').get('href')
-                time = art.find('span', class_='time').text.strip()
+                # time = art.find('span', class_='time').text.strip()
 
                 self.links_news[art_id] = {}
-                self.links_news[art_id]['title'] = title
+                # self.links_news[art_id]['title'] = title
                 self.links_news[art_id]['href'] = href
-                self.links_news[art_id]['time'] = time
+                # self.links_news[art_id]['time'] = time
             except:
                 art_id = 'None'              
                 self.links_news[art_id] = {}
-                self.links_news[art_id]['title'] = ''
+                # self.links_news[art_id]['title'] = ''
                 self.links_news[art_id]['href'] = ''
-                self.links_news[art_id]['time'] = ''
+                # self.links_news[art_id]['time'] = ''
+        # print(self.links_news)
     
     def save_to_json(self):
         print('save_to_json')
@@ -77,12 +78,12 @@ def main():
     helper.get_last_number()
     helper.get_all_links()
 
-    # with Pool(100) as p:
-    #     p.map(helper.get_news, helper.all_links)
+    with Pool(40) as p:
+        p.map(helper.get_news, helper.all_links)
 
-    for number, link in enumerate(helper.all_links):
-        print(number)
-        helper.get_news(link)
+    # for number, link in enumerate(helper.all_links):
+    #     print(number)
+    #     helper.get_news(link)
 
     helper.save_to_json()
 
@@ -94,7 +95,7 @@ import aiohttp
 
 links_news = {}
 
-def save_to_json():
+async def save_to_json(links_news):
     with open(os.path.join(dirname, 'respons.json'), 'w') as f:
         json.dump(links_news, f, indent=2, ensure_ascii=False)
 
@@ -116,30 +117,30 @@ async def fetch_content(url, session):
             art_id = art.get('id')
             print(art_id)
             # art_id = 'Data'
-            title = art.find('a', class_='entry-title').text.strip()
+            # title = art.find('a', class_='entry-title').text.strip()
             href = art.find('a', class_='entry-title').get('href')
-            time = art.find('span', class_='time').text.strip()
+            # time = art.find('span', class_='time').text.strip()
 
             # data_page = await get_json(href, session)
             # soup_page = BeautifulSoup(data_page, features='html.parser')
             # text_page = [i for i in soup_page.find('div', class_='content').find_all('p')]
             # print(text_page)
 
-            links_news[art_id] = {}
-            links_news[art_id]['title'] = title
+            # links_news[art_id] = {}
+            # links_news[art_id]['title'] = title
             links_news[art_id]['href'] = href
-            links_news[art_id]['time'] = time
-            links_news[art_id]['text'] = text_page
+            # links_news[art_id]['time'] = time
+            # links_news[art_id]['text'] = text_page
 
         except:
             art_id = 'None'              
             links_news[art_id] = {}
-            links_news[art_id]['title'] = ''
+            # links_news[art_id]['title'] = ''
             links_news[art_id]['href'] = ''
-            links_news[art_id]['time'] = ''
-            links_news[art_id]['text'] = ['']
+            # links_news[art_id]['time'] = ''
+            # links_news[art_id]['text'] = ['']
+    save_to_json(links_news)
 
-    print(links_news)
 
 async def main2():
     helper = Helper()
@@ -156,7 +157,9 @@ async def main2():
         
         await asyncio.gather(*tasks)
 
-    save_to_json()
+    # await save_to_json()
+
+    # save_to_json()
 
 if __name__ == "__main__":
     t0 = time()
