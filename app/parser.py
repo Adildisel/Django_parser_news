@@ -14,7 +14,8 @@ dirname = os.path.dirname(__file__)
 
 class Helper:
     def __init__(self):
-        pass
+        self.proxies = None
+        self.useragents = None
 
     def init(self):
         print('__init__')
@@ -22,7 +23,19 @@ class Helper:
             csv.writer(file)
             # writer.writerow((''))
 
+    def get_proxy_list(self):
+        self.proxies = open('txt_file/proxies.txt').read().split('\n')
+
+    def get_user_a_list(self):
+        self.useragents = open('txt_file/useragents.txt').read().split('\n')
+
     def get_html(self, url):
+        proxy = {
+            'http': 'http://{}'.format(choice(self.proxies)),
+            }
+        useragent = {
+            'User-Agent': choice(self.useragents)
+        }
         html = requests.get(url, headers=None, proxies=None).text
         return html
 
