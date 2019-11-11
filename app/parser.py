@@ -95,7 +95,8 @@ import aiohttp
 
 links_news = {}
 
-async def save_to_json(links_news):
+def save_to_json(links_news):
+    print('save_to json')
     with open(os.path.join(dirname, 'respons.json'), 'w') as f:
         json.dump(links_news, f, indent=2, ensure_ascii=False)
 
@@ -131,6 +132,10 @@ async def fetch_content(url, session):
             links_news[art_id]['href'] = href
             # links_news[art_id]['time'] = time
             # links_news[art_id]['text'] = text_page
+            print('save_start')
+            save_to_json(links_news)
+            sleep(10)
+            print('save_finish')
 
         except:
             art_id = 'None'              
@@ -139,6 +144,7 @@ async def fetch_content(url, session):
             links_news[art_id]['href'] = ''
             # links_news[art_id]['time'] = ''
             # links_news[art_id]['text'] = ['']
+
     save_to_json(links_news)
 
 
