@@ -8,19 +8,34 @@ import random
 from multiprocessing import Pool
 import json
 import os
+import csv
 
 dirname = os.path.dirname(__file__)
 
 class Helper:
     def __init__(self):
-        self.r = ''
-        self.ip = ''
-        self.user_a = ''
-        self.proxies = []
-        self.useragents = []
-        self.links_news = {}
+        self.proxies = None
+        self.useragents = None
+
+    def init(self):
+        print('__init__')
+        with open(os.path.join(dirname, 'news.csv'), 'w') as file:
+            csv.writer(file)
+            # writer.writerow((''))
+
+    def get_proxy_list(self):
+        self.proxies = open('txt_file/proxies.txt').read().split('\n')
+
+    def get_user_a_list(self):
+        self.useragents = open('txt_file/useragents.txt').read().split('\n')
 
     def get_html(self, url):
+        proxy = {
+            'http': 'http://{}'.format(choice(self.proxies)),
+            }
+        useragent = {
+            'User-Agent': choice(self.useragents)
+        }
         html = requests.get(url, headers=None, proxies=None).text
         return html
 
@@ -38,54 +53,55 @@ class Helper:
         print('get_all_links')
         self.all_links = ['https://pasmi.ru/cat/news/page/{}/'.format(i) for i in range(1, int(self.last_number)+1)]
     
-    def get_news(self, link):
-        print('get_news')
-        
+    def get_news(self, link):      
         soup = self.get_soup(self.get_html(link))
         arts = soup.find_all('article')
+        
         for art in arts:
+            links_news = {}
             try:
-                art_id = art.get('id')
-                print(art_id)
-                # art_id = 'Data'
-                # title = art.find('a', class_='entry-title').text.strip()
+                title = art.find('a', class_='entry-title').text.strip()
                 href = art.find('a', class_='entry-title').get('href')
-                # time = art.find('span', class_='time').text.strip()
+                time = art.find('span', class_='time').text.strip()
+        
+                soup_page = self.get_soup(self.get_html(href))
+                text_page = [i for i in soup_page.find('div', class_='content').find_all('p')]
 
-                self.links_news[art_id] = {}
-                # self.links_news[art_id]['title'] = title
-                self.links_news[art_id]['href'] = href
-                # self.links_news[art_id]['time'] = time
+                links_news['title'] = title
+                links_news['time'] = time
+                links_news['text'] = text_page
+                print('text is yes')
             except:
-                art_id = 'None'              
-                self.links_news[art_id] = {}
-                # self.links_news[art_id]['title'] = ''
-                self.links_news[art_id]['href'] = ''
-                # self.links_news[art_id]['time'] = ''
-        # print(self.links_news)
+                links_news['title'] = ''
+                links_news['time'] = ''
+                links_news['text'] = ['']
+
+            self.write_csv(links_news)
     
-    def save_to_json(self):
-        print('save_to_json')
-        with open(os.path.join(dirname, 'respons.json'), 'w') as f:
-            json.dump(self.links_news, f, indent=2, ensure_ascii=False)
+    # def save_to_json(self):
+    #     print(self.links_news)
+    #     with open(os.path.join(dirname, 'respons.json'), 'w') as f:
+    #         json.dump(self.links_news, f, indent=2, ensure_ascii=False)
+    
+    def write_csv(self, data):
+        with open(os.path.join(dirname, 'news.csv'), 'a') as file:
+            writer = csv.writer(file)
+            writer.writerow((data['title'], data['time'], data['text']))
 
 def main():
     helper = Helper()
 
-    url = 'http://sitespy.ru/my-ip'
-    url_news = ''
+    helper.init()
 
     helper.get_last_number()
     helper.get_all_links()
 
-    with Pool(40) as p:
+    with Pool(10) as p:
         p.map(helper.get_news, helper.all_links)
 
     # for number, link in enumerate(helper.all_links):
     #     print(number)
     #     helper.get_news(link)
-
-    helper.save_to_json()
 
 
 # --------------------------------------------------
@@ -93,40 +109,40 @@ def main():
 import asyncio
 import aiohttp
 
-links_news = {}
 
+<<<<<<< HEAD
 def save_to_json(links_news):
     print('save_to json')
     with open(os.path.join(dirname, 'respons.json'), 'w') as f:
         json.dump(links_news, f, indent=2, ensure_ascii=False)
+=======
+def save_to_file(data):
+    with open(os.path.join(dirname, 'news.csv'), 'a') as file:
+            writer = csv.writer(file)
+            writer.writerow((data['title'], data['time'], data['text']))
+>>>>>>> b1934e7ea9d9665f9a5c18e4965ca9691433aada
 
-async def get_json(url, session):
+async def get_response(url, session):
     async with session.get(url) as response:
         print(response.status)
         return await response.text()
 
-# async def get_page(url, session):
-#     async with session.get(url)
-
-
 async def fetch_content(url, session):
-    data = await get_json(url, session)
+    data = await get_response(url, session)
     soup = BeautifulSoup(data, features='html.parser')
     arts = soup.find_all('article')
     for art in arts:
+        links_news = {}
         try:
-            art_id = art.get('id')
-            print(art_id)
-            # art_id = 'Data'
-            # title = art.find('a', class_='entry-title').text.strip()
+            title = art.find('a', class_='entry-title').text.strip()
             href = art.find('a', class_='entry-title').get('href')
-            # time = art.find('span', class_='time').text.strip()
+            time = art.find('span', class_='time').text.strip()
 
-            # data_page = await get_json(href, session)
-            # soup_page = BeautifulSoup(data_page, features='html.parser')
-            # text_page = [i for i in soup_page.find('div', class_='content').find_all('p')]
-            # print(text_page)
+            data_page = await get_response(href, session)
+            soup_page = BeautifulSoup(data_page, features='html.parser')
+            text_page = [i for i in soup_page.find('div', class_='content').find_all('p')]
 
+<<<<<<< HEAD
             # links_news[art_id] = {}
             # links_news[art_id]['title'] = title
             links_news[art_id]['href'] = href
@@ -146,7 +162,18 @@ async def fetch_content(url, session):
             # links_news[art_id]['text'] = ['']
 
     save_to_json(links_news)
+=======
+            links_news['title'] = title
+            links_news['time'] = time
+            links_news['text'] = text_page
 
+        except:
+            links_news['title'] = ''
+            links_news['time'] = ''
+            links_news['text'] = ['']
+>>>>>>> b1934e7ea9d9665f9a5c18e4965ca9691433aada
+
+        save_to_file(links_news)
 
 async def main2():
     helper = Helper()
@@ -163,13 +190,11 @@ async def main2():
         
         await asyncio.gather(*tasks)
 
-    # await save_to_json()
-
-    # save_to_json()
+    save_to_json(data=links_news)
 
 if __name__ == "__main__":
     t0 = time()
-    asyncio.run(main2())
-    # main()
+    # asyncio.run(main2())
+    main()
     print(time()-t0)
     # main()
