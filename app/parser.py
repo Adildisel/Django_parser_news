@@ -50,9 +50,38 @@ class Helper:
     def get_last_number(self):
         print('get_last_number')
         url = 'https://pasmi.ru/cat/news/'
+        # url = 'https://pasmi.ru/cat/news/page/2/'
         soup = self.get_soup(self.get_html(url))
         print(soup)
         # self.last_number = soup.find_all('a', class_='page-numbers')[1].text.strip()
+    
+    def take_all_hrefs(self):
+        self.href_list = []
+        date_dict = {
+            'month_2000': ['aug', 'sep', 'oct', 'nov', 'dec'],
+            'month': [ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'],
+            'day': [str(i) for i in range(1, 32)],
+            'yers': [str(i) for i in range(2000, 2020)]
+        }
+        for yers in date_dict['yers']:
+            if yers == '2000':
+                for month in date_dict['month_2000']:
+                    for day in date_dict['day']:
+                        self.href_list.append(
+                            'https://www.newsru.com/allnews/{}{}{}/'.format(
+                                day, month, yers
+                            )
+                        )
+            for month in date_dict['month']:
+                for day in date_dict['day']:
+                    self.href_list.append(
+                        'https://www.newsru.com/allnews/{}{}{}/'.format(
+                            day, month, yers
+                        )
+                    )
+        print(len(self.href_list))
+
+
     
     def get_all_links(self):
         print('get_all_links')
@@ -105,7 +134,10 @@ class Helper:
 def main():
     helper = Helper()
 
-    helper.init()
+    # helper.init()
+
+    helper.take_all_hrefs()
+
 
     # helper.get_last_number()
     # helper.get_all_links()
@@ -113,10 +145,10 @@ def main():
     # with Pool(50) as p:
     #     p.map(helper.get_all_href, helper.all_links)
 
-    hrefs = pd.read_csv(os.path.join(dirname, 'hrefs.csv'), header=None).values
+    # hrefs = pd.read_csv(os.path.join(dirname, 'hrefs.csv'), header=None).values
     
-    with Pool(200) as p:
-        p.map(helper.get_news, hrefs)
+    # with Pool(200) as p:
+    #     p.map(helper.get_news, hrefs)
 
     # for number, link in enumerate(helper.all_links):
     #     print(number)
@@ -149,31 +181,49 @@ async def get_response(url, session):
 async def news_content(url, session):
     data = await get_response(url, session)
     links_news = {}
+    text = '\n'
     try:
         soup = BeautifulSoup(data, features='html.parser')
-        content = soup.find('div', class_='entry-content')
-        title = content.find('h1', class_='entry-title').text.strip()
-        time = content.find('span', class_='time').text.strip()
-        text = [i.text.strip() for i in content.find('div', class_='content').find_all('p')]
+        # content = soup.find('div', class_='entry-content')
+        # title = content.find('h1', class_='entry-title').text.strip()
+        # time = content.find('span', class_='time').text.strip()
+        # text = [i.text.strip() for i in content.find('div', class_='content').find_all('p')]
+        content = soup.find('div', class_='article')
+        title = content.find('h1', class_='article-title').text.strip()
+        time = content.find('div', class_='article-date').text.strip()
+        text_list= [i.text.strip() for i in content.find('div', class_='article-text').find_all('p')]
 
         links_news['title'] = title
         links_news['time'] = time
-        links_news['text'] = text
+        links_news['text'] = text.join(text_list)
     except:
+        print('Error')
         links_news['title'] = ''
         links_news['time'] = ''
         links_news['text'] = ''
     save_to_file(links_news)
 
-async def fetch_content(url, session):
+# async def fetch_content(url, session):
+#     data = await get_response(url, session)
+#     soup = BeautifulSoup(data, features='html.parser')
+#     arts = soup.find_all('article')
+#     links_news = {}
+#     for art in arts:
+#         try:
+#             href = art.find('a', class_='entry-title').get('href')
+#             links_news['href'] = href
+#         except:
+#             links_news['href'] = ''
+#         save_hrefs(links_news)
+
+async def fetch_content_href(url, session):
     data = await get_response(url, session)
     soup = BeautifulSoup(data, features='html.parser')
-    arts = soup.find_all('article')
+    hrefs = soup.find_all('a', class_='index-news-title')
     links_news = {}
-    for art in arts:
+    for href in hrefs:
         try:
-            href = art.find('a', class_='entry-title').get('href')
-            links_news['href'] = href
+            links_news['href'] = 'https://www.newsru.com{}'.format(href.get('href'))
         except:
             links_news['href'] = ''
         save_hrefs(links_news)
@@ -211,29 +261,37 @@ async def fetch_content(url, session):
 async def main2():
     helper = Helper()
 
-    helper.init(name='hrefs')
+    helper.init(name='news')
 
-    helper.get_last_number()
+    # helper.get_last_number()
     # helper.get_all_links()
+    # helper.take_all_hrefs()
 
     # tasks = []
 
     # async with aiohttp.ClientSession() as session:
     #     for url in helper.all_links:
     #         task = asyncio.create_task(fetch_content(url, session))
-    #         tasks.append(task)
-        
+    #         tasks.append(task)      
     #     await asyncio.gather(*tasks)
 
-    # hrefs = pd.read_csv(os.path.join(dirname, 'hrefs.csv'), header=None).values
 
     # tasks = []
     # async with aiohttp.ClientSession() as session:
-    #     for url in hrefs:
-    #         task = asyncio.create_task(news_content(url[0], session))
-    #         tasks.append(task)
-        
+    #     for url in helper.href_list:
+    #         task = asyncio.create_task(fetch_content_href(url, session))
+    #         tasks.append(task)       
     #     await asyncio.gather(*tasks)
+
+
+
+    hrefs = pd.read_csv(os.path.join(dirname, 'hrefs.csv'), header=None).values
+    tasks = []
+    async with aiohttp.ClientSession() as session:
+        for url in hrefs[0:1000]:
+            task = asyncio.create_task(news_content(url[0], session))
+            tasks.append(task)    
+        await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     t0 = time()
