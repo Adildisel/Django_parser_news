@@ -30,6 +30,7 @@ class Helper:
         self.useragents = open('txt_file/useragents.txt').read().split('\n')
 
     def get_html(self, url):
+        print('get_html')
         self.get_proxy_list()
         self.get_user_a_list()
         proxy = {
@@ -42,6 +43,7 @@ class Helper:
         return html
 
     def get_soup(self, html):
+        print('get_soup')
         soup = BeautifulSoup(html, features='html.parser')
         return soup
 
@@ -49,7 +51,8 @@ class Helper:
         print('get_last_number')
         url = 'https://pasmi.ru/cat/news/'
         soup = self.get_soup(self.get_html(url))
-        self.last_number = soup.find_all('a', class_='page-numbers')[1].text.strip()
+        print(soup)
+        # self.last_number = soup.find_all('a', class_='page-numbers')[1].text.strip()
     
     def get_all_links(self):
         print('get_all_links')
@@ -129,19 +132,13 @@ def save_hrefs(data):
     print('save_hrefs')
     with open(os.path.join(dirname, 'hrefs.csv'), 'a') as file:
         writer = csv.writer(file)
-        try:
-            writer.writerow((data['href'],))
-        except:
-            writer.writerow(('',))
+        writer.writerow((data['href'],))
 
 def save_to_file(data):
     print('save_to_file')
     with open(os.path.join(dirname, 'news.csv'), 'a') as file:
         writer = csv.writer(file)
-        try:
-            writer.writerow((data['title'], data['time'], data['text']))
-        except:
-            writer.writerow(('',))
+        writer.writerow((data['title'], data['time'], data['text']))
 
 async def get_response(url, session):
     async with session.get(url) as response:
@@ -151,9 +148,9 @@ async def get_response(url, session):
 
 async def news_content(url, session):
     data = await get_response(url, session)
+    links_news = {}
     try:
         soup = BeautifulSoup(data, features='html.parser')
-        links_news = {}
         content = soup.find('div', class_='entry-content')
         title = content.find('h1', class_='entry-title').text.strip()
         time = content.find('span', class_='time').text.strip()
@@ -162,10 +159,11 @@ async def news_content(url, session):
         links_news['title'] = title
         links_news['time'] = time
         links_news['text'] = text
-
-        save_to_file(links_news)
     except:
-        print('Error')
+        links_news['title'] = ''
+        links_news['time'] = ''
+        links_news['text'] = ''
+    save_to_file(links_news)
 
 async def fetch_content(url, session):
     data = await get_response(url, session)
@@ -173,9 +171,11 @@ async def fetch_content(url, session):
     arts = soup.find_all('article')
     links_news = {}
     for art in arts:
-        href = art.find('a', class_='entry-title').get('href')
-        links_news['href'] = href
-
+        try:
+            href = art.find('a', class_='entry-title').get('href')
+            links_news['href'] = href
+        except:
+            links_news['href'] = ''
         save_hrefs(links_news)
     
 
@@ -214,16 +214,16 @@ async def main2():
     helper.init(name='hrefs')
 
     helper.get_last_number()
-    helper.get_all_links()
+    # helper.get_all_links()
 
-    tasks = []
+    # tasks = []
 
-    async with aiohttp.ClientSession() as session:
-        for url in helper.all_links:
-            task = asyncio.create_task(fetch_content(url, session))
-            tasks.append(task)
+    # async with aiohttp.ClientSession() as session:
+    #     for url in helper.all_links:
+    #         task = asyncio.create_task(fetch_content(url, session))
+    #         tasks.append(task)
         
-        await asyncio.gather(*tasks)
+    #     await asyncio.gather(*tasks)
 
     # hrefs = pd.read_csv(os.path.join(dirname, 'hrefs.csv'), header=None).values
 
