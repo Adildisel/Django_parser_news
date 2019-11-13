@@ -11,6 +11,13 @@ import os
 import csv
 import pandas as pd
 
+import re
+import numpy as np
+
+import sqlalchemy
+from sqlalchemy import Table
+import sqlite3
+
 dirname = os.path.dirname(__file__)
 
 class Helper:
@@ -131,13 +138,40 @@ class Helper:
                 writer.writerow((data['href'],))
             writer.writerow((data['title'], data['time'], data['text']))
 
+    def to_sqlite(self, data):
+        print('to_sqlite')
+        engine = sqlalchemy.create_engine('sqlite:///../db.sqlite3')
+        conn  = sqlite3.connect('../db.sqlite3')
+        conn.execute("""
+                        DELETE FROM app_news
+                    """
+                    )
+        conn.commit()
+        data.to_sql('app_news', con=engine, if_exists='append', index=False)
+
+    def read_csv(self):
+        print('read_csv')
+        data = pd.read_csv(os.path.join(dirname, 'news.csv'), header=None,)
+        data.columns = ['title', 'time', 'text']
+        data = data[:100]
+        # data['text'] = data['text'].apply(get_text)
+        # data = open(os.path.join(dirname, 'news.csv'))
+        self.to_sqlite(data)
+
+    def get_text(self, text):
+        p = re.compile('(<.*?>)|([[^\.\w\s]])')
+        return p.sub('', text)
+
+    def get_array(self, text):
+        return np.array(text)
+
+
 def main():
     helper = Helper()
 
     # helper.init()
 
-    helper.take_all_hrefs()
-
+    # helper.take_all_hrefs()
 
     # helper.get_last_number()
     # helper.get_all_links()
@@ -153,6 +187,8 @@ def main():
     # for number, link in enumerate(helper.all_links):
     #     print(number)
     #     helper.get_news(link)
+
+    helper.read_csv()
 
 
 # --------------------------------------------------
@@ -295,7 +331,7 @@ async def main2():
 
 if __name__ == "__main__":
     t0 = time()
-    asyncio.run(main2())
-    # main()
+    # asyncio.run(main2())
+    main()
     print(time()-t0)
     # main()
