@@ -156,7 +156,8 @@ class Helper:
         print('read_csv')
         data = pd.read_csv(os.path.join(dirname, 'news.csv'), header=None,)
         data.columns = ['title', 'time', 'text']
-        data = data[:1000]
+        data = data.dropna(0)
+        data = data[:3000]
         # data['text'] = data['text'].apply(get_text)
         # data = open(os.path.join(dirname, 'news.csv'))
         self.to_sqlite(data)
@@ -172,7 +173,7 @@ class Helper:
 def main():
     helper = Helper()
 
-    helper.init(name='news')
+    # helper.init(name='news')
 
     # helper.take_all_hrefs()
 
@@ -191,8 +192,8 @@ def main():
     #     print(number)
     #     helper.get_news(link)
 
-    # helper.clear_db()
-    # helper.read_csv()
+    helper.clear_db()
+    helper.read_csv()
 
 
 # --------------------------------------------------
@@ -337,18 +338,18 @@ def init_main(main):
 if __name__ == "__main__":
     t0 = time()
     main()
-    list_ = []
-    n = 21300
-    while n>0:
-        a = n-200
-        if a<0:
-            list_.append([0, n])
-            break
-        list_.append([a, n])
-        n=a
-    print(list_)
-    with Pool(4) as p:
-        p.map(init_main, list_)
+    # list_ = []
+    # n = 21300
+    # while n>0:
+    #     a = n-200
+    #     if a<0:
+    #         list_.append([0, n])
+    #         break
+    #     list_.append([a, n])
+    #     n=a
+    # print(list_)
+    # with Pool(4) as p:
+    #     p.map(init_main, list_)
     # for i in list_:
     #     print(i)
     # asyncio.run(main2([0, 100]))
