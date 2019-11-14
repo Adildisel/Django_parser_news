@@ -141,19 +141,22 @@ class Helper:
     def to_sqlite(self, data):
         print('to_sqlite')
         engine = sqlalchemy.create_engine('sqlite:///../db.sqlite3')
+        data.to_sql('app_news', con=engine, if_exists='append', index=False)
+
+    def clear_db(self):
+        print('clear databases')
         conn  = sqlite3.connect('../db.sqlite3')
         conn.execute("""
                         DELETE FROM app_news
                     """
                     )
         conn.commit()
-        data.to_sql('app_news', con=engine, if_exists='append', index=False)
 
     def read_csv(self):
         print('read_csv')
         data = pd.read_csv(os.path.join(dirname, 'news.csv'), header=None,)
         data.columns = ['title', 'time', 'text']
-        data = data[:100]
+        data = data[:1000]
         # data['text'] = data['text'].apply(get_text)
         # data = open(os.path.join(dirname, 'news.csv'))
         self.to_sqlite(data)
@@ -169,7 +172,7 @@ class Helper:
 def main():
     helper = Helper()
 
-    # helper.init()
+    helper.init(name='news')
 
     # helper.take_all_hrefs()
 
@@ -188,7 +191,8 @@ def main():
     #     print(number)
     #     helper.get_news(link)
 
-    helper.read_csv()
+    # helper.clear_db()
+    # helper.read_csv()
 
 
 # --------------------------------------------------
@@ -217,7 +221,7 @@ async def get_response(url, session):
 async def news_content(url, session):
     data = await get_response(url, session)
     links_news = {}
-    text = '\n'
+    text = ' \n'
     try:
         soup = BeautifulSoup(data, features='html.parser')
         # content = soup.find('div', class_='entry-content')
@@ -231,7 +235,7 @@ async def news_content(url, session):
 
         links_news['title'] = title
         links_news['time'] = time
-        links_news['text'] = text.join(text_list)
+        links_news['text'] = text_list
     except:
         print('Error')
         links_news['title'] = ''
@@ -294,10 +298,10 @@ async def fetch_content_href(url, session):
 
     #     save_to_file(links_news)
 
-async def main2():
+async def main2(dir_):
     helper = Helper()
 
-    helper.init(name='news')
+    # helper.init(name='news')
 
     # helper.get_last_number()
     # helper.get_all_links()
@@ -319,19 +323,35 @@ async def main2():
     #         tasks.append(task)       
     #     await asyncio.gather(*tasks)
 
-
-
     hrefs = pd.read_csv(os.path.join(dirname, 'hrefs.csv'), header=None).values
     tasks = []
     async with aiohttp.ClientSession() as session:
-        for url in hrefs[0:1000]:
+        for url in hrefs[dir_[0]:dir_[1]]:
             task = asyncio.create_task(news_content(url[0], session))
             tasks.append(task)    
         await asyncio.gather(*tasks)
 
+def init_main(main):
+    asyncio.run(main2(main))
+
 if __name__ == "__main__":
     t0 = time()
-    # asyncio.run(main2())
     main()
+    list_ = []
+    n = 21300
+    while n>0:
+        a = n-200
+        if a<0:
+            list_.append([0, n])
+            break
+        list_.append([a, n])
+        n=a
+    print(list_)
+    with Pool(4) as p:
+        p.map(init_main, list_)
+    # for i in list_:
+    #     print(i)
+    # asyncio.run(main2([0, 100]))
+    
     print(time()-t0)
     # main()
